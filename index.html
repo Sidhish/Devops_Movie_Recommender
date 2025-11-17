@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Movie Recommendation System</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #111;
+        color: #fff;
+        margin: 0;
+        padding: 0;
+    }
+
+    header {
+        padding: 20px;
+        text-align: center;
+        background: #222;
+        font-size: 26px;
+        font-weight: bold;
+        color: #00eaff;
+    }
+
+    .search-box {
+        margin: 20px auto;
+        text-align: center;
+    }
+
+    input {
+        width: 60%;
+        padding: 12px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+    }
+
+    button {
+        padding: 12px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #00eaff;
+        color: black;
+        margin-left: 5px;
+    }
+
+    h2 {
+        margin-left: 20px;
+        margin-top: 10px;
+    }
+
+    .movie-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .movie-card {
+        background: #1a1a1a;
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+        transition: 0.3s;
+    }
+
+    .movie-card:hover {
+        transform: scale(1.05);
+    }
+
+    .movie-card img {
+        width: 100%;
+        border-radius: 6px;
+    }
+
+    .title {
+        margin-top: 10px;
+        font-weight: bold;
+        color: #00eaff;
+        font-size: 14px;
+    }
+
+    .meta {
+        font-size: 12px;
+        color: #bbb;
+        margin-top: 4px;
+    }
+
+    .searched {
+        border: 2px solid #00eaff;
+    }
+
+    .message {
+        margin-left: 20px;
+        font-size: 14px;
+        color: #ccc;
+    }
+</style>
+</head>
+
+<body>
+
+<header>🎬 Movie Recommendation System</header>
+
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search a movie (e.g. RRR, Inception, 3 Idiots)...">
+    <button onclick="searchMovie()">Search</button>
+</div>
+
+<h2>All Movies</h2>
+<div id="movieList" class="movie-grid"></div>
+
+<h2>Recommended Movies</h2>
+<p id="recommendMsg" class="message">Search a movie to see recommendations based on genre & industry.</p>
+<div id="recommendList" class="movie-grid"></div>
+
+<script>
+    // Safe working image generator
+    function getPosterUrl(title) {
+        return "https://dummyimage.com/300x450/000000/00eaff&text=" + encodeURIComponent(title);
+    }
+
+    // Movie Dataset (50 movies)
+    const movies = [
+        // Hollywood
+        { title: "Inception", genre: "Sci-Fi", industry: "Hollywood" },
+        { title: "Interstellar", genre: "Sci-Fi", industry: "Hollywood" },
+        { title: "The Dark Knight", genre: "Action", industry: "Hollywood" },
+        { title: "The Matrix", genre: "Sci-Fi", industry: "Hollywood" },
+        { title: "Avatar", genre: "Sci-Fi", industry: "Hollywood" },
+        { title: "Titanic", genre: "Romance", industry: "Hollywood" },
+        { title: "The Notebook", genre: "Romance", industry: "Hollywood" },
+        { title: "La La Land", genre: "Romance", industry: "Hollywood" },
+        { title: "John Wick", genre: "Action", industry: "Hollywood" },
+        { title: "Avengers: Endgame", genre: "Action", industry: "Hollywood" },
+        { title: "The Avengers", genre: "Action", industry: "Hollywood" },
+        { title: "Guardians of the Galaxy", genre: "Action", industry: "Hollywood" },
+        { title: "Spider-Man: Into the Spider-Verse", genre: "Animation", industry: "Hollywood" },
+        { title: "Joker", genre: "Drama", industry: "Hollywood" },
+
+        // Korean + OTT
+        { title: "Parasite", genre: "Thriller", industry: "Korean" },
+        { title: "Train to Busan", genre: "Horror", industry: "Korean" },
+        { title: "Squid Game", genre: "Thriller", industry: "Korean" },
+        { title: "Money Heist", genre: "Thriller", industry: "OTT" },
+        { title: "Extraction", genre: "Action", industry: "OTT" },
+        { title: "The Irishman", genre: "Drama", industry: "OTT" },
+        { title: "Delhi Crime", genre: "Crime", industry: "OTT" },
+
+        // Anime
+        { title: "Your Name", genre: "Anime", industry: "Anime" },
+        { title: "Spirited Away", genre: "Anime", industry: "Anime" },
+        { title: "Demon Slayer: Mugen Train", genre: "Anime", industry: "Anime" },
+        { title: "A Silent Voice", genre: "Anime", industry: "Anime" },
+        { title: "Naruto: The Last", genre: "Anime", industry: "Anime" },
+        { title: "One Piece Film: Red", genre: "Anime", industry: "Anime" },
+        { title: "Attack on Titan: Chronicle", genre: "Anime", industry: "Anime" },
+        { title: "Suzume", genre: "Anime", industry: "Anime" },
+
+        // Bollywood
+        { title: "3 Idiots", genre: "Drama", industry: "Bollywood" },
+        { title: "Dangal", genre: "Drama", industry: "Bollywood" },
+        { title: "PK", genre: "Comedy", industry: "Bollywood" },
+        { title: "Zindagi Na Milegi Dobara", genre: "Drama", industry: "Bollywood" },
+        { title: "Yeh Jawaani Hai Deewani", genre: "Romance", industry: "Bollywood" },
+        { title: "Jawan", genre: "Action", industry: "Bollywood" },
+        { title: "Pathaan", genre: "Action", industry: "Bollywood" },
+        { title: "Bajrangi Bhaijaan", genre: "Drama", industry: "Bollywood" },
+        { title: "Andhadhun", genre: "Thriller", industry: "Bollywood" },
+        { title: "Gully Boy", genre: "Drama", industry: "Bollywood" },
+
+        // Tollywood (South India)
+        { title: "Baahubali: The Beginning", genre: "Action", industry: "Tollywood" },
+        { title: "Baahubali 2: The Conclusion", genre: "Action", industry: "Tollywood" },
+        { title: "RRR", genre: "Action", industry: "Tollywood" },
+        { title: "Pushpa: The Rise", genre: "Action", industry: "Tollywood" },
+        { title: "Arjun Reddy", genre: "Romance", industry: "Tollywood" },
+        { title: "Ala Vaikunthapurramuloo", genre: "Romance", industry: "Tollywood" },
+        { title: "Sita Ramam", genre: "Romance", industry: "Tollywood" },
+        { title: "Salaar", genre: "Action", industry: "Tollywood" },
+        { title: "KGF: Chapter 1", genre: "Action", industry: "Tollywood" },
+        { title: "KGF: Chapter 2", genre: "Action", industry: "Tollywood" },
+        { title: "Devara", genre: "Action", industry: "Tollywood" }
+    ];
+
+    // Render all movies on UI
+    function displayMovies() {
+        const list = document.getElementById("movieList");
+        list.innerHTML = "";
+        movies.forEach(m => {
+            const poster = getPosterUrl(m.title);
+            list.innerHTML += `
+                <div class="movie-card">
+                    <img src="${poster}" alt="${m.title}">
+                    <div class="title">${m.title}</div>
+                    <div class="meta">${m.genre} • ${m.industry}</div>
+                </div>
+            `;
+        });
+    }
+
+    // Search & recommend
+    function searchMovie() {
+        const input = document.getElementById("searchInput").value.trim().toLowerCase();
+        const recommendBox = document.getElementById("recommendList");
+        const recommendMsg = document.getElementById("recommendMsg");
+
+        recommendBox.innerHTML = "";
+
+        if (input === "") {
+            recommendMsg.textContent = "Please enter a movie name to get recommendations.";
+            return;
+        }
+
+        let found = movies.find(m => m.title.toLowerCase() === input);
+        if (!found) {
+            found = movies.find(m => m.title.toLowerCase().includes(input));
+        }
+
+        if (!found) {
+            recommendMsg.textContent = "No movie found with that name.";
+            return;
+        }
+
+        recommendMsg.textContent = `You searched for "${found.title}". Recommended movies:`;
+
+        const foundPoster = getPosterUrl(found.title);
+
+        recommendBox.innerHTML += `
+            <div class="movie-card searched">
+                <img src="${foundPoster}" alt="${found.title}">
+                <div class="title">${found.title} (Searched)</div>
+                <div class="meta">${found.genre} • ${found.industry}</div>
+            </div>
+        `;
+
+        const rec = movies.filter(m =>
+            m.title !== found.title &&
+            (m.genre === found.genre || m.industry === found.industry)
+        );
+
+        rec.forEach(m => {
+            const poster = getPosterUrl(m.title);
+            recommendBox.innerHTML += `
+                <div class="movie-card">
+                    <img src="${poster}" alt="${m.title}">
+                    <div class="title">${m.title}</div>
+                    <div class="meta">${m.genre} • ${m.industry}</div>
+                </div>
+            `;
+        });
+    }
+
+    displayMovies();
+</script>
+
+</body>
+</html>
